@@ -1410,6 +1410,7 @@ export default App
 ```
 
 - **28/5/2025**
+# todo (ανεξάρτητο)
 - pulling git daily version from lesson:
 ```bash
 # Fetch tags and branches from the teacher’s remote
@@ -1427,3 +1428,229 @@ git branch -d temp-2025.05.28
 
 στην περιπτωσή αλλάζουμε το state με setState και στην άλλη με dispatch
 - συνέχεια στο Todo app
+o καθηγητής έφτιαξε ένα νεο repo για το todo app
+
+```bash
+git init
+git remote add origin git@github.com:alkisax/cf7-react-todo-app.git
+git pull origin main --allow-unrelated-histories
+git add .
+git commit -m "initial push"
+git push origin main
+git remote add teacher https://github.com/DamMarin/cf7-react-todo-app.git
+git fetch teacher
+git merge teacher/main --allow-unrelated-histories
+# (Resolve merge conflicts if any, e.g. in .gitignore)
+git add .gitignore  # after conflict resolved
+git commit -m "Merge teacher/main with resolved conflict"
+
+npm install
+```
+
+## αρχικές ρυθμήσεις
+```bash
+npm create cite@latest . -- --template react-ts
+npm install
+npm install tailwindcc @tailwindcss/vite lucide-react
+```
+
+#### index.css
+```css
+@import "tailwindcss";
+
+@theme {
+  --color-cf-dark-red: #782024;
+  --color-cf-dark-gray: #202123;
+  --color-cf-gray: #2b2d2f;
+}
+```
+
+#### vite.config.ts
+```ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(),tailwindcss()],
+})
+```
+
+- αντιγράφω τα components απο το προηγούμενο project
+- App.tsx
+```tsx
+import Todo from "./components/Todo.tsx";
+function App() {
+  return (
+    <>
+      <Todo/>
+    </>
+  )
+}
+export default App
+```
+## μεταφορά όλων των types σε ένα σημείο για να τα καλώ 
+- μετα θα σβήσω τα types απο τα components και θα τα καλώ
+#### types.ts
+```ts
+export type TodoProps = {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+export type Action =
+  | {type: "ADD"; payload: string}
+  | {type: "DELETE"; payload: number}
+  | {type: "EDIT"; payload: {id: number; newText:string} }
+  | {type: "COMPLETE"; payload: number};
+
+export type TodoFormProps = {
+  dispatch: React.Dispatch<Action>;
+};
+
+export type TodoListProps = {
+  todos: TodoProps[];
+  dispatch: React.Dispatch<Action>
+}
+
+```
+και
+- Todo.tsx
+```tsx
+import type { TodoProps, Action} from "../types.ts"
+```
+- TodoForm.tsx
+```tsx
+import type { TodoFormProps } from "../types.ts";
+```
+- TodoList.tsx
+```tsx
+import type { TodoListProps } from "../types.ts";
+```
+
+
+## eddit feat
+#### types.ts
+```ts
+export type Action =
+//etc
+  // Χρειάζομαι το id του todo που θα αλλάξω και το νέο κείμενο που θα μπει
+  | {type: "EDIT"; payload: {id: number; newText:string} }
+//etc
+```
+
+#### TodoList.tsx
+- δεν το κατάλαβα καλα αυτό `useState<number | null>(null)`
+```tsx
+import { useState } from "react";
+import {Trash2, Edit, Save, X, Square, CheckSquare} from "lucide-react";
+import type { TodoListProps } from "../types.ts";
+
+const TodoList = ({todos, dispatch}: TodoListProps) =>{
+const [editId, setEditId] = useState<number | null>(null);
+const [editText, setEditText] = useState("");
+
+
+// Version 1: () => () => { ... } You use this when you need to delay execution until something happens, like a button click.
+// Version 2: () => { ... } This runs immediately when called.
+// θα κάνουμε useState αντι για dispatch. αφού κάνουμε την αλλαγή θα κάνουμε το dispatch Μέσο handleSave
+const handleEdit = (id: number, text: string) => () => {
+  setEditId(id);
+  setEditText(text);
+}
+
+const handleSave = (id: number) => () =>{
+  dispatch({type: "EDIT", payload: {id, newText: editText}});
+  setEditId(null);
+  setEditText("");
+}
+
+const handleCancel = () => {
+  setEditId(null);
+  setEditText("");
+}
+
+const handleDelete = (id: number) => () => {
+  dispatch({type: "DELETE", payload: id});
+}
+
+const handleToggle = (id: number) => () => {
+  dispatch({type: "COMPLETE", payload: id});
+}
+
+            // εχω ένα state και ελέγχω αν το id του todo έχει διαλεχθει για αλλαγή τότε να μου εμφανήσει μια φόρμα για να προσθέσω το νέο κείμενο. Οποτε μου ανοίγει ένα input και ένα κουμπί save/cancel.
+            // αλλιώς μου διχνει το todo με τις διαφορες επιλογές του
+            // (e) => setEditText(e.target.value) για να φορτώνει την πληκτρολογιση
+  return (
+    <>
+      <ul className="space-y-2">
+        {todos.map(todo => (
+          <li key={todo.id}
+            className={`flex items-center justify-between bg-gray-100 p-2 rounded
+             ${todo.completed ? "opacity-60 line-through" : ""}`}
+          >
+            { editId === todo.id ? (
+              <>
+                <div className="flex flex-1 gap-2">
+                  <input
+                    type="text"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="flex-1 border rounded p-1"
+                  />
+                  <button
+                    onClick={handleSave(todo.id)}
+                    className="text-cf-gray"
+                  >
+                    <Save size={18}/>
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="text-cf-dark-red"
+                  >
+                    <X size={18}/>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 flex-1">
+                  <button
+                    className="text-green-500"
+                    onClick={handleToggle(todo.id)}
+                  >
+                    {todo.completed ? (
+                      <CheckSquare size={18}/>
+                    ): (
+                      <Square size={18}/>
+                    )}
+                  </button>
+                  <span>{todo.text}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleEdit(todo.id, todo.text)}
+                    className="text-cf-gray"
+                  >
+                    <Edit size={18}/>
+                  </button>
+                  <button
+                    onClick={handleDelete(todo.id)}
+                    className="text-cf-dark-red"
+                  >
+                    <Trash2 size={18}/>
+                  </button>
+                </div>
+              </>
+            )}
+          </li>
+          ))}
+      </ul>
+    </>
+  )
+}
+
+export default TodoList;
+```
