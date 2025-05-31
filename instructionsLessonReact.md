@@ -1655,3 +1655,117 @@ const handleToggle = (id: number) => () => {
 export default TodoList;
 ```
 - 1:12:50 28/5/2025
+
+- ξανα μόνο η λογική του edit και οχι τα της εμφάνησης
+```tsx
+const [editId, setEditId] = useState<number | null>(null);
+const [editText, setEditText] = useState("");
+
+const handleEdit = (id: number, text: string) => () => {
+  setEditId(id);
+  setEditText(text);
+}
+
+const handleSave = (id: number) => () =>{
+  dispatch({type: "EDIT", payload: {id, newText: editText}});
+  setEditId(null);
+  setEditText("");
+}
+            // το editId μου έρχετε απο το κουμπί edit που καλέι το handleEdit που αλλάζει το state
+            { editId === todo.id ? (
+                  <input
+                    type="text"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="flex-1 border rounded p-1"
+                  />
+                  
+                  <button
+                    onClick={handleSave(todo.id)}
+                    className="text-cf-gray"
+                  >
+                    <Save size={18}/>
+                  </button>
+
+                  <button
+                    onClick={handleCancel}
+                    className="text-cf-dark-red"
+                  >
+                    <X size={18}/>
+                  </button>
+
+                ) : (
+
+                  <button
+                    onClick={handleEdit(todo.id, todo.text)}
+                    className="text-cf-gray"
+                  >
+                    <Edit size={18}/>
+                  </button>
+
+                )
+```
+- delete
+```tsx
+const handleDelete = (id: number) => () => {
+  dispatch({type: "DELETE", payload: id});
+}
+
+                  <button
+                    onClick={handleDelete(todo.id)}
+                    className="text-cf-dark-red"
+                  >
+```
+
+- todo.tsx
+προστέθηκαν τα edit complete στον switch
+```tsx
+const todoReducer = (state: TodoProps[], action: Action): TodoProps[] => {
+  switch (action.type) {
+// ...
+    case "DELETE":
+      return state.filter(todo => todo.id !== action.payload);
+    case "EDIT":
+      // αν υπάρχει id αλλάζει μόνο αυτό με το id. τα δεδομένα του έρχονται με το payload του action (dispatch({type: "EDIT", payload: {id, newText: editText}});). Αν δεν υπάρχει id (λάθος;) το αφήνει όπως είναι
+      return state.map( todo =>
+        todo.id === action.payload.id
+        ? {...todo, text: action.payload.newText}
+        : todo
+      );
+// ...
+  }
+```
+
+## todo task done feat
+#### TodoList.tsx
+```tsx
+const handleToggle = (id: number) => () => {
+  dispatch({type: "COMPLETE", payload: id});
+}
+
+
+          <li key={todo.id}
+            className={`flex items-center justify-between bg-gray-100 p-2 rounded
+             ${todo.completed ? "opacity-60 line-through" : ""}`}
+          >
+
+                  <button
+                    className="text-green-500"
+                    onClick={handleToggle(todo.id)}
+                  >
+                    {todo.completed ? (
+                      <CheckSquare size={18}/>
+                    ): (
+                      <Square size={18}/>
+                    )}
+                  </button>
+```
+- Todo.tsx
+```tsx
+    case "COMPLETE":
+      return state.map( todo =>
+        todo.id === action.payload
+        ? {...todo, completed: !todo.completed}
+        : todo
+      );
+```
