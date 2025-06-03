@@ -1828,3 +1828,90 @@ git merge temp-2025.06.02 --allow-unrelated-histories
 git branch -d temp-2025.06.02
 ##### 6. Push changes to your personal remote GitHub repo (optional)
 git push origin main
+- τα ιδια πανω κατω και για το todo app και για το intro app
+
+# useEffect
+
+#### πχ...
+```tsx
+  useEffect(() => {
+    document.title = name ? `Hello, ${name}!` : "Hello, Stranger!";
+  },[name])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  }
+```
+```tsx
+  useEffect(() => {
+    // setup
+    return () => {
+      // clean up
+      // το return θα τρέξει οταν αλλάξει κάποιο dependency (πχ να θέλουμε να μηδενίσουμε μια μεταβλητη)
+      // (runs before the effect re-runs or on unmount)
+    }
+  },[name])
+
+```
+```tsx
+  useEffect(() => {
+    const id: number = setInterval(() => console.log("tick"), timeout 1000)
+    return () => clearInterval(id);
+  },[])
+```
+-εχουμε επιστρέψει στο project cf7-react-intro
+#### OnlineStatus.tsx
+
+```tsx
+import { useState, useEffect  } from "react";
+const OnlineStatus = () => {
+  // μας επιστρέφει αν μια συσκευή είναι συνδεδεμένη. boolean
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    // ενημερώνει το state με τον setter
+    const handler = () => setIsOnline(navigator.onLine);
+    // επειδή σε διάφορους browser δεν δουλευει προσθέσαμε μια λειτουργία που κοιτά αν είναι συνδεδεμένος ο χρήστης αν πέντε δευτερολεπα (καλεί τον handler)
+    const pollingId: number = setInterval(handler, 5000);
+
+    // οταν γίνει Online/offline τρέξε την handler
+    window.addEventListener("online", handler);
+    window.addEventListener("offline", handler);
+
+    // απο εδώ και πέρα μια clean up όπου αφαιρώ οτι είχα προσθέσει
+    return () => {
+      clearInterval(pollingId);
+      window.removeEventListener("online", handler);
+      window.removeEventListener("offline", handler);
+    };
+  }, []) // είναι κενο. θα τρέξει μόνο στο refresh της σελίδας
+
+  return (
+    <>
+      <div className={`text-white text-center mt-12 mx-4 p-4 rounded ${ isOnline ? 
+        "bg-green-500" : "bg-cf-dark-red"}`}>
+        { isOnline ? "You are online!" : "You are offline!" }
+      </div>
+    </>
+  )
+}
+
+export default OnlineStatus;
+```
+
+- App.tsx
+```tsx
+import Layout from "./components/Layout.tsx";
+import OnlineStatus from "./components/OnlineStatus.tsx";
+
+function App() {
+  return (
+    <>
+      <Layout>
+        <OnlineStatus/>
+      </Layout>
+    </>
+  )
+}
+export default App
+```
