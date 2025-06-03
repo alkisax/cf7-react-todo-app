@@ -1814,3 +1814,17 @@ const NameChanger = () => {
 }
 export default NameChanger;
 ```
+
+-2/6/2025
+##### 1. Fetch all updates and tags from teacher repo
+git fetch teacher --tags
+##### 2. Create a temporary branch from the tag 2025.06.02
+git checkout -b temp-2025.06.02 2025.06.02
+##### 3. Switch back to your main branch
+git checkout main
+##### 4. Merge the temp branch into main (handle conflicts if needed)
+git merge temp-2025.06.02 --allow-unrelated-histories
+##### 5. Delete the temp branch (optional, after successful merge)
+git branch -d temp-2025.06.02
+##### 6. Push changes to your personal remote GitHub repo (optional)
+git push origin main
